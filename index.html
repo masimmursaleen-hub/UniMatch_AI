@@ -97,11 +97,29 @@ const newChatBtn = document.getElementById("new-chat-btn");
 let chats = JSON.parse(localStorage.getItem("chats") || "[]");
 let currentChatIndex = chats.length ? chats.length - 1 : 0;
 
+// Generate bot reply locally
+function generateBotReply(userMessage) {
+  userMessage = userMessage.toLowerCase();
+  if (userMessage.includes("computer") || userMessage.includes("cs")) {
+    return "💻 Based on your interest in computers, you can consider fields like Software Engineering or AI. Top universities in Pakistan: NUST, LUMS, FAST.";
+  } 
+  if (userMessage.includes("marks") && userMessage.match(/\d+/)) {
+    const marks = parseInt(userMessage.match(/\d+/)[0]);
+    if (marks >= 85) return "🎓 Excellent marks! Aim for top universities like NUST or LUMS.";
+    if (marks >= 70) return "📘 Good marks! Consider FAST, PIEAS, or UET Lahore.";
+    return "📚 Explore universities with moderate entry requirements like Bahria University or COMSATS.";
+  } 
+  if (userMessage.includes("city")) {
+    return "🌆 Noted your city. We will suggest universities close to your location.";
+  }
+  return "🤔 Thanks! Based on your interests and marks, explore relevant fields in Pakistan.";
+}
+
+// Sidebar rendering
 function renderSidebar() {
   chatList.innerHTML = "";
-  // reverse loop to show latest chat on top
   chats.slice().reverse().forEach((session, reverseIdx) => {
-    const idx = chats.length - 1 - reverseIdx; // original index
+    const idx = chats.length - 1 - reverseIdx;
     if (!session.length) return;
     const lastMsg = session[session.length - 1].message || "New Chat";
     const chatItem = document.createElement("div");
@@ -110,7 +128,7 @@ function renderSidebar() {
 
     const moreBtn = document.createElement("button");
     moreBtn.classList.add("more-btn");
-    moreBtn.textContent = "✖"; // new
+    moreBtn.textContent = "✖";
     moreBtn.addEventListener("click", e => {
       e.stopPropagation();
       if (confirm("Are you sure you want to delete this chat?")) {
@@ -121,7 +139,6 @@ function renderSidebar() {
     });
 
     chatItem.appendChild(moreBtn);
-
     chatItem.dataset.index = idx;
     chatItem.addEventListener("click", () => {
       currentChatIndex = idx;
@@ -144,22 +161,9 @@ function saveChats() {
 function appendMessage(message, type) {
   const msgDiv = document.createElement("div");
   msgDiv.classList.add("message", type);
-
-  if (type === "bot") {
-    msgDiv.innerHTML = formatBotReply(message);
-  } else {
-    msgDiv.textContent = message;
-  }
-
+  msgDiv.textContent = message;
   chat.appendChild(msgDiv);
   chat.scrollTop = chat.scrollHeight;
-}
-
-function formatBotReply(reply) {
-  return reply
-    .replace(/\*\*(.*?)\*\*/g, "<b>$1</b>")      // bold
-    .replace(/- (.*?)(\n|$)/g, "• $1<br>")       // bullets
-    .replace(/\n/g, "<br>");                     // line breaks
 }
 
 function showTyping() {
@@ -171,6 +175,7 @@ function showTyping() {
   return typingDiv;
 }
 
+// Send message (local)
 async function sendMessage() {
   const userMessage = input.value.trim();
   if (!userMessage) return;
@@ -183,35 +188,13 @@ async function sendMessage() {
 
   const typingDiv = showTyping();
 
-  try {
-    const history = chats[currentChatIndex].map(msg => ({
-      role: msg.type === "user" ? "user" : "assistant",
-      content: msg.message
-    }));
-
-    const response = await fetch("server", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ history })
-});
-
-
-    const data = await response.json();
+  setTimeout(() => {
+    const botReply = generateBotReply(userMessage);
     typingDiv.remove();
-
-    if (data.reply) {
-      appendMessage(data.reply, "bot");
-      chats[currentChatIndex].push({ message: data.reply, type: "bot" });
-      saveChats();
-    } else {
-      appendMessage("Sorry, no response from server.", "bot");
-    }
-
-  } catch (err) {
-    console.error(err);
-    typingDiv.remove();
-    appendMessage("Sorry, server is not responding. Try again later.", "bot");
-  }
+    appendMessage(botReply, "bot");
+    chats[currentChatIndex].push({ message: botReply, type: "bot" });
+    saveChats();
+  }, 800);
 }
 
 sendBtn.addEventListener("click", sendMessage);
@@ -245,5 +228,3 @@ if (!chats.length) {
 
 </body>
 </html>
-
-
