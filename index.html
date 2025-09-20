@@ -189,7 +189,7 @@ async function sendMessage() {
       content: msg.message
     }));
 
-    const response = await fetch("http://localhost:5000/chat", {
+    const response = await fetch("https://uni-match-ai-antn.vercel.app/chat", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({ history })
@@ -245,3 +245,4 @@ if (!chats.length) {
 
 </body>
 </html>
+
